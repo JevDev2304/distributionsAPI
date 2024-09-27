@@ -1,5 +1,3 @@
-
-```markdown
 # Distributions API
 
 API for calculating probabilities for statistics distributions.
@@ -14,8 +12,8 @@ API for calculating probabilities for statistics distributions.
 1. Clone the repo:
 
    ```bash
-   git clone <REPOSITORY_URL>
-   cd <DIRECTORY_NAME>
+   git clone https://github.com/JevDev2304/distributionsAPI.git
+   cd distributionsAPI
    ```
 
 2. Install dependencies:
