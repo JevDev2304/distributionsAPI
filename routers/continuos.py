@@ -4,6 +4,7 @@ from models.gamma import GammaInput
 from models.exponential import ExponentialInput
 from models.chi import  ChiSquareInput
 from models.normal import NormalInput
+from typing import List
 from math import exp, gamma, pi , sqrt
 
 continuosRouter = APIRouter(prefix="/continuos",
@@ -74,6 +75,7 @@ def calculate_uniform(input: UniformInput):
         "f(x)": y_axis
     }
 
+
 @continuosRouter.post("/gamma/")
 def calculate_gamma(input: GammaInput):
     alpha = input.alpha
@@ -81,72 +83,60 @@ def calculate_gamma(input: GammaInput):
     x = input.x
     operator = input.operator
 
-    # Validar que alpha y beta sean mayores que 0
+    # Validaciones iniciales
     if alpha <= 0 or beta <= 0:
         raise HTTPException(status_code=400, detail="Los parámetros alpha y beta deben ser mayores que 0.")
 
     if x < 0:
         raise HTTPException(status_code=400, detail="x debe ser mayor o igual a 0.")
 
-    # Inicializar ejes x y y
-    x_axis = []
-    y_axis = []
+    # Variables para la PDF y configuración del paso
+    x_axis: List[float] = []
+    y_axis: List[float] = []
     current_x = 0.0
-    step = 0.01
+    step = 0.01  # Disminuir el paso para mayor precisión
+    gamma_alpha = gamma(alpha)  # Constante Gamma(alpha)
 
-    # Calcular la función gamma de alpha
-    gamma_alpha = gamma(alpha)
+    # Inicializamos la CDF
+    cdf = 0.0
 
-    # Cálculo de la probabilidad usando la fórmula directa de la PDF
+    # Cálculo de la PDF y acumulación de la CDF hasta x usando la regla del trapecio
     while current_x <= (alpha + 4 * beta):
         # PDF de la distribución gamma
-        if current_x < 0:
-            pdf = 0
-        else:
-            pdf = (current_x ** (alpha - 1)) * (exp(-current_x / beta)) / ((beta ** alpha) * gamma_alpha)
+        pdf = (beta ** alpha / gamma_alpha) * (current_x ** (alpha - 1)) * exp(-beta * current_x)
 
-        # Añadir a los ejes
-        x_axis.append(round(current_x, 2))
-        y_axis.append(round(pdf, 5))
+        # Agregamos puntos al gráfico
+        x_axis.append(round(current_x, 3))  # Redondeo para precisión en la salida
+        y_axis.append(round(pdf, 6))
 
-        # Incrementar el valor de x en 0.01
+        # Acumulamos la CDF hasta x
+        if current_x <= x:
+            cdf += pdf * step
+
+        # Avanzamos el valor de current_x
         current_x += step
 
-    # Calcular la CDF aproximada usando la regla del trapecio
-    cdf = 0
-    current_x = 0
-
-    while current_x <= x:
-        # Calcular el área bajo la curva como sumatoria de áreas rectangulares
-        if current_x < 0:
-            pdf = 0
-        else:
-            pdf = (current_x ** (alpha - 1)) * (exp(-current_x / beta)) / ((beta ** alpha) * gamma_alpha)
-
-        # Sumar la probabilidad con el paso
-        cdf += pdf * step
-        current_x += step
-
-    # Calcular la probabilidad según el operador
-    probability = 0
+    # Cálculo de la probabilidad según el operador
     if operator == "=":
-        probability = 0  # En distribuciones continuas, la probabilidad de un valor exacto es 0.
+        probability = 0  # Probabilidad de un valor exacto en distribución continua es 0.
     elif operator == "<":
+        probability = cdf
+    elif operator == "<=":
         probability = cdf
     elif operator == ">":
         probability = 1 - cdf
-    elif operator == "<=":
-        probability = cdf
     elif operator == ">=":
         probability = 1 - cdf
     else:
         raise HTTPException(status_code=400, detail="Operador no válido")
 
+    # Retorno del resultado
     return {
-        "probability": round(probability, 5),
+        "probability": round(probability, 6),  # Más precisión en el resultado final
         "x": x_axis,
         "f(x)": y_axis
     }
+
 
 @continuosRouter.post("/exponential/")
 def calculate_exponential(input: ExponentialInput):
