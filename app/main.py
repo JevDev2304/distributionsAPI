@@ -9,7 +9,7 @@ app = FastAPI()
 # Configuración de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir todas las orígenes. Cambia esto para mayor seguridad en producción.
+    allow_origins=["https://distributions-rouge.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],  # Permitir todos los métodos (GET, POST, PUT, DELETE, etc.).
     allow_headers=["*"],  # Permitir todos los headers.
